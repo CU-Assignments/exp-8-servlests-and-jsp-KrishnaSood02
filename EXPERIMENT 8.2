@@ -1,0 +1,106 @@
+Database Setup (MySQL)
+
+CREATE DATABASE EmployeeDB;
+USE EmployeeDB;
+
+CREATE TABLE employees (
+    id INT PRIMARY KEY,
+    name VARCHAR(50),
+    position VARCHAR(50)
+);
+
+INSERT INTO employees VALUES (1, 'John Doe', 'Manager'), (2, 'Jane Smith', 'Developer');
+
+EmployeeServlet.java (Servlet to Display Employees)
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/EmployeeServlet")
+public class EmployeeServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String url = "jdbc:mysql://localhost:3306/EmployeeDB";
+        String user = "root";
+        String password = "root";
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection conn = DriverManager.getConnection(url, user, password);
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM employees");
+            ResultSet rs = ps.executeQuery();
+
+            out.println("<h2>Employee List</h2>");
+            while (rs.next()) {
+                out.println("<p>" + rs.getInt("id") + " - " + rs.getString("name") + " - " + rs.getString("position") + "</p>");
+            }
+        } catch (Exception e) {
+            out.println("<p>Error: " + e.getMessage() + "</p>");
+        }
+    }
+}
+
+HTLM
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Search Employee</title>
+</head>
+<body>
+    <h2>Search Employee by ID</h2>
+    <form action="SearchEmployeeServlet" method="get">
+        Enter Employee ID: <input type="text" name="id"><br>
+        <input type="submit" value="Search">
+    </form>
+</body>
+</html>
+
+SearchEmployeeServlet.java (Search Employee by ID)
+
+@WebServlet("/SearchEmployeeServlet")
+public class SearchEmployeeServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+
+        String empId = request.getParameter("id");
+
+        String url = "jdbc:mysql://localhost:3306/EmployeeDB";
+        String user = "root";
+        String password = "root";
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection conn = DriverManager.getConnection(url, user, password);
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM employees WHERE id=?");
+            ps.setInt(1, Integer.parseInt(empId));
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                out.println("<h2>Employee Details</h2>");
+                out.println("<p>ID: " + rs.getInt("id") + "</p>");
+                out.println("<p>Name: " + rs.getString("name") + "</p>");
+                out.println("<p>Position: " + rs.getString("position") + "</p>");
+            } else {
+                out.println("<p>No Employee Found!</p>");
+            }
+        } catch (Exception e) {
+            out.println("<p>Error: " + e.getMessage() + "</p>");
+        }
+    }
+}
+
